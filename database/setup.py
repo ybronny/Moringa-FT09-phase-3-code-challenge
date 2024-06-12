@@ -1,37 +1,35 @@
-import sqlite3
+from  .connection import get_db_connection
 
-def initialize_database():
-    conn = sqlite3.connect('magazine_app.db')
-    c = conn.cursor()
-
-    c.execute('''
-    CREATE TABLE IF NOT EXISTS writers (
-        id INTEGER PRIMARY KEY,
-        full_name TEXT NOT NULL
-    )
+def create_tables():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS authors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL
+        )
     ''')
-
-    c.execute('''
-    CREATE TABLE IF NOT EXISTS publications (
-        id INTEGER PRIMARY KEY,
-        title TEXT NOT NULL,
-        genre TEXT NOT NULL
-    )
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS magazines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL
+        )
     ''')
-
-    c.execute('''
-    CREATE TABLE IF NOT EXISTS entries (
-        id INTEGER PRIMARY KEY,
-        headline TEXT NOT NULL,
-        writer_id INTEGER,
-        publication_id INTEGER,
-        FOREIGN KEY (writer_id) REFERENCES writers(id),
-        FOREIGN KEY (publication_id) REFERENCES publications(id)
-    )
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS articles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            author_id INTEGER,
+            magazine_id INTEGER,
+            FOREIGN KEY (author_id) REFERENCES authors (id),
+            FOREIGN KEY (magazine_id) REFERENCES magazines (id)
+        )
     ''')
 
     conn.commit()
     conn.close()
 
-if __name__ == "__main__":
-    initialize_database()
+create_tables()

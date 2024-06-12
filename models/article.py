@@ -1,53 +1,53 @@
-import sqlite3
-
+from .__init__ import conn, cursor
 class Article:
-    def __init__(self, id, title, author_id, magazine_id):
+    all = {}
+    def __init__(self, title, content, author_id, magazine_id, id=None):
         self.id = id
         self.title = title
+        self.content = content
         self.author_id = author_id
         self.magazine_id = magazine_id
-        self.save()
+        self.add_to_database()
+        
 
-    def save(self):
-        connection = sqlite3.connect('magazine.db')
-        cursor = connection.cursor()
-        cursor.execute('''
-        INSERT INTO articles (id, title, author_id, magazine_id)
-        VALUES (?, ?, ?, ?)
-        ''', (self.id, self.title, self.author_id, self.magazine_id))
-        connection.commit()
-        connection.close()
-
+    def __repr__(self):
+        return f'<Article {self.title}, {self.content}>'
+    
+    def add_to_database(self):
+        sql = """
+            INSERT INTO articles (title, content, author_id, magazine_id)
+            VALUES (?, ?, ?, ?)
+        """
+        cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id))
+        conn.commit()
+        self.id = cursor.lastrowid
+        type(self).all[self.id] = self
+    
     @property
     def title(self):
         return self._title
-
+    
     @title.setter
-    def title(self, value):
-        if not isinstance(value, str) or not (5 <= len(value) <= 50):
-            raise ValueError("Title must be a string between 5 and 50 characters")
-        self._title = value
-
-    def get_author(self):
-        connection = sqlite3.connect('magazine.db')
-        cursor = connection.cursor()
-        cursor.execute('''
-        SELECT authors.name FROM authors
-        JOIN articles ON articles.author_id = authors.id
-        WHERE articles.id = ?
-        ''', (self.id,))
-        author = cursor.fetchone()
-        connection.close()
-        return author
-
-    def get_magazine(self):
-        connection = sqlite3.connect('magazine.db')
-        cursor = connection.cursor()
-        cursor.execute('''
-        SELECT magazines.name FROM magazines
-        JOIN articles ON articles.magazine_id = magazines.id
-        WHERE articles.id = ?
-        ''', (self.id,))
-        magazine = cursor.fetchone()
-        connection.close()
-        return magazine
+    def title(self, title):
+        if isinstance(title, str) and 5 <= len(title) <= 50:
+            if not hasattr(self, "title"):
+                self._title = title
+            else:
+                raise AttributeError("Cannot change the title after instantation.")
+        else:
+            raise ValueError("Title must be a non-empty string with characters between 5 and 50")
+    
+    @classmethod
+    def row_to_instance(cls, row):
+        article = cls.all.get(row[0])
+        if article:
+            article.title = row[1]
+            article.content = row[2]
+            article.author_id = row[3]
+            article.magazine_id = row[4]
+        else:
+            article = cls(row[1], row[2], row[3], row[4])
+            article.id = row[0]
+            cls.all[article.id] = article
+        
+        return article
